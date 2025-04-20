@@ -147,7 +147,7 @@
             color: var(--danger-bg);
         }
         
-        input[type="text"] {
+        input[type="text"], select {
             width: 100%;
             padding: 12px;
             font-size: 16px;
@@ -158,7 +158,7 @@
             color: var(--text-color);
         }
         
-        input[type="text"]:focus {
+        input[type="text"]:focus, select:focus {
             outline: none;
             border-color: var(--input-focus-border);
             box-shadow: 0 0 0 3px var(--input-focus-shadow);
@@ -247,16 +247,17 @@
             font-weight: bold;
         }
         
-        .word-form {
+        .word-form, .wordbook-form {
             display: flex;
             gap: 10px;
+            margin-bottom: 15px;
         }
         
-        .word-form input {
+        .word-form input, .wordbook-form input {
             flex: 1;
             margin-bottom: 0;
         }
-
+        
         /* 統計圖片模態視窗樣式 */
         #stats-modal {
             display: none;
@@ -344,6 +345,41 @@
         #theme-toggle:hover {
             background-color: var(--secondary-hover-bg);
         }
+
+        /* 提示系統樣式 */
+        #hint-container {
+            display: none;
+            margin-top: 10px;
+        }
+
+        #hint-text {
+            font-size: 24px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        #show-hint-btn {
+            margin-left: 10px;
+        }
+
+        /* 輸入區域布局 */
+        .quiz-input-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 單字簿編輯區域 */
+        #wordbook-edit-panel {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #wordbook-edit-panel.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -355,34 +391,52 @@
         
         <!-- 設置頁面 -->
         <div id="settings-panel" class="card settings">
-            <h2>單詞設置</h2>
+            <h2>單字簿管理</h2>
             
+            <div class="wordbook-form">
+                <select id="wordbook-select"></select>
+                <button id="edit-wordbook-btn" class="secondary">編輯單字簿</button>
+            </div>
+            
+            <div class="wordbook-form">
+                <input type="text" id="new-wordbook-name" placeholder="新單字簿名稱">
+                <button id="create-wordbook-btn" class="success">創建單字簿</button>
+            </div>
+            
+            <div id="wordbook-edit-panel" class="card">
+                <h3>編輯單字簿</h3>
+                <div class="wordbook-form">
+                    <input type="text" id="wordbook-name-input" placeholder="單字簿名稱">
+                    <button id="save-wordbook-name-btn" class="success">儲存名稱</button>
+                </div>
+                
+                <h4>單詞管理</h4>
+                <div class="word-list">
+                    <table id="wordbook-word-table">
+                        <thead>
+                            <tr>
+                                <th>英文</th>
+                                <th>中文</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wordbook-word-list-body"></tbody>
+                    </table>
+                </div>
+                
+                <h4>添加單詞</h4>
+                <div class="word-form">
+                    <input type="text" id="new-english" placeholder="英文">
+                    <input type="text" id="new-chinese" placeholder="中文">
+                    <button id="add-word-btn" class="success">添加</button>
+                </div>
+                <button id="delete-wordbook-btn" class="danger" style="margin-top: 10px;">刪除單字簿</button>
+            </div>
+            
+            <h2>測驗模式</h2>
             <div class="tab-buttons">
                 <button class="tab-button secondary" data-mode="zh_to_en">中文 → 英文</button>
                 <button class="tab-button" data-mode="en_to_zh">英文 → 中文</button>
-            </div>
-            
-            <h3>單詞管理</h3>
-            <div class="word-list">
-                <table id="word-table">
-                    <thead>
-                        <tr>
-                            <th>英文</th>
-                            <th>中文</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="word-list-body">
-                        <!-- JavaScript 將在這裡插入單詞 -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <h3>添加單詞</h3>
-            <div class="word-form">
-                <input type="text" id="new-english" placeholder="英文">
-                <input type="text" id="new-chinese" placeholder="中文">
-                <button id="add-word-btn" class="success">添加</button>
             </div>
         </div>
         
@@ -414,8 +468,14 @@
             <div id="quiz-question" class="word"></div>
             
             <div id="quiz-input-container">
-                <input type="text" id="answer-input" placeholder="請輸入翻譯" autofocus>
-                <button id="check-answer-btn">檢查答案</button>
+                <div class="quiz-input-area">
+                    <input type="text" id="answer-input" placeholder="請輸入翻譯" autofocus>
+                    <button id="show-hint-btn" class="secondary" style="display: none;">顯示提示</button>
+                    <button id="check-answer-btn">檢查答案</button>
+                </div>
+                <div id="hint-container">
+                    <p id="hint-text"></p>
+                </div>
             </div>
             
             <div id="quiz-result" style="display: none;">
@@ -464,7 +524,14 @@
         
         // 應用狀態
         let state = {
-            vocabulary: [],
+            wordBooks: [
+                {
+                    id: Date.now(),
+                    name: "預設單字簿",
+                    words: [...initialVocabulary]
+                }
+            ],
+            currentWordBookId: null,
             currentWord: null,
             quizMode: 'en_to_zh', // 'en_to_zh' 或 'zh_to_en'
             showResult: false,
@@ -476,7 +543,7 @@
             },
             todayStats: {
                 date: new Date().toDateString(),
-                words: new Set(), // 記錄今日練習的單字ID
+                words: new Set(),
                 correct: 0,
                 incorrect: 0,
                 total: 0
@@ -487,10 +554,18 @@
         const elements = {
             settingsButton: document.getElementById('settings-button'),
             settingsPanel: document.getElementById('settings-panel'),
-            wordListBody: document.getElementById('word-list-body'),
+            wordbookSelect: document.getElementById('wordbook-select'),
+            newWordbookName: document.getElementById('new-wordbook-name'),
+            createWordbookBtn: document.getElementById('create-wordbook-btn'),
+            editWordbookBtn: document.getElementById('edit-wordbook-btn'),
+            wordbookEditPanel: document.getElementById('wordbook-edit-panel'),
+            wordbookNameInput: document.getElementById('wordbook-name-input'),
+            saveWordbookNameBtn: document.getElementById('save-wordbook-name-btn'),
+            wordbookWordListBody: document.getElementById('wordbook-word-list-body'),
             newEnglish: document.getElementById('new-english'),
             newChinese: document.getElementById('new-chinese'),
             addWordBtn: document.getElementById('add-word-btn'),
+            deleteWordbookBtn: document.getElementById('delete-wordbook-btn'),
             learnedCount: document.getElementById('learned-count'),
             totalCount: document.getElementById('total-count'),
             correctCount: document.getElementById('correct-count'),
@@ -516,49 +591,50 @@
             todayAttempts: document.getElementById('today-attempts'),
             todayWinRate: document.getElementById('today-win-rate'),
             themeToggle: document.getElementById('theme-toggle'),
-            themeIcon: document.getElementById('theme-icon')
+            themeIcon: document.getElementById('theme-icon'),
+            showHintBtn: document.getElementById('show-hint-btn'),
+            hintContainer: document.getElementById('hint-container'),
+            hintText: document.getElementById('hint-text')
         };
         
         // 初始化應用
         function initApp() {
-            // 從本地存儲中加載數據或使用初始數據
-            const savedVocabulary = localStorage.getItem('vocabulary');
-            state.vocabulary = savedVocabulary ? JSON.parse(savedVocabulary) : [...initialVocabulary];
+            // 從本地存儲中加載數據
+            const savedWordBooks = localStorage.getItem('wordBooks');
+            if (savedWordBooks) {
+                state.wordBooks = JSON.parse(savedWordBooks);
+            }
             
-            // 從本地存儲中加載統計數據
+            const savedCurrentWordBookId = localStorage.getItem('currentWordBookId');
+            state.currentWordBookId = savedCurrentWordBookId || state.wordBooks[0].id;
+            
             const savedStats = localStorage.getItem('stats');
             if (savedStats) {
                 state.stats = JSON.parse(savedStats);
             }
             
-            // 從本地存儲中加載今日統計數據
             const savedTodayStats = localStorage.getItem('todayStats');
             if (savedTodayStats) {
                 const parsed = JSON.parse(savedTodayStats);
                 if (parsed.date === new Date().toDateString()) {
                     state.todayStats = {
                         ...parsed,
-                        words: new Set(parsed.words) // 將數組轉回 Set
+                        words: new Set(parsed.words)
                     };
                 }
             }
             
-            // 加載測驗模式
             const savedMode = localStorage.getItem('quizMode');
             if (savedMode) {
                 state.quizMode = savedMode;
             }
             
-            // 加載主題
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
             updateThemeIcon(savedTheme);
             
-            // 設置事件監聽器
             setupEventListeners();
-            
-            // 更新界面
-            updateWordList();
+            updateWordbookSelect();
             updateStats();
             updateTabButtons();
             updateCurrentMode();
@@ -567,13 +643,13 @@
         
         // 設置事件監聽器
         function setupEventListeners() {
-            // 設置按鈕
             elements.settingsButton.addEventListener('click', toggleSettings);
-            
-            // 添加單詞
+            elements.createWordbookBtn.addEventListener('click', createWordbook);
+            elements.wordbookSelect.addEventListener('change', selectWordbook);
+            elements.editWordbookBtn.addEventListener('click', toggleWordbookEdit);
+            elements.saveWordbookNameBtn.addEventListener('click', saveWordbookName);
             elements.addWordBtn.addEventListener('click', addNewWord);
-            
-            // 測驗操作
+            elements.deleteWordbookBtn.addEventListener('click', deleteWordbook);
             elements.toggleModeBtn.addEventListener('click', toggleQuizMode);
             elements.checkAnswerBtn.addEventListener('click', checkAnswer);
             elements.nextWordBtn.addEventListener('click', getNextWord);
@@ -586,8 +662,6 @@
                     }
                 }
             });
-            
-            // 模式切換標籤
             elements.tabButtons.forEach(button => {
                 button.addEventListener('click', function() {
                     state.quizMode = this.dataset.mode;
@@ -597,30 +671,100 @@
                     getNextWord();
                 });
             });
-            
-            // 生成統計圖片模態視窗
             elements.generateStatsImageBtn.addEventListener('click', showStatsModal);
-            
-            // 關閉模態視窗
             elements.closeStatsModal.addEventListener('click', hideStatsModal);
-            
-            // 下載統計圖片
             elements.downloadStatsImage.addEventListener('click', downloadStatsImage);
-            
-            // 深色模式切換
             elements.themeToggle.addEventListener('click', toggleTheme);
+            elements.showHintBtn.addEventListener('click', showHint);
         }
         
         // 切換設置面板
         function toggleSettings() {
             elements.settingsPanel.classList.toggle('active');
+            elements.wordbookEditPanel.classList.remove('active');
         }
         
-        // 更新單詞列表
-        function updateWordList() {
-            elements.wordListBody.innerHTML = '';
+        // 更新單字簿選擇下拉選單
+        function updateWordbookSelect() {
+            elements.wordbookSelect.innerHTML = '';
+            state.wordBooks.forEach(book => {
+                const option = document.createElement('option');
+                option.value = book.id;
+                option.textContent = `${book.name} (${book.words.length} 個單字)`;
+                if (book.id === state.currentWordBookId) {
+                    option.selected = true;
+                }
+                elements.wordbookSelect.appendChild(option);
+            });
+        }
+        
+        // 創建新單字簿
+        function createWordbook() {
+            const name = elements.newWordbookName.value.trim();
+            if (!name) {
+                alert('請輸入單字簿名稱！');
+                return;
+            }
+            if (state.wordBooks.some(book => book.name === name)) {
+                alert('單字簿名稱已存在！');
+                return;
+            }
             
-            state.vocabulary.forEach(word => {
+            const newBook = {
+                id: Date.now(),
+                name,
+                words: []
+            };
+            state.wordBooks.push(newBook);
+            state.currentWordBookId = newBook.id;
+            saveWordBooks();
+            updateWordbookSelect();
+            elements.newWordbookName.value = '';
+            getNextWord();
+        }
+        
+        // 選擇單字簿
+        function selectWordbook() {
+            state.currentWordBookId = parseInt(elements.wordbookSelect.value);
+            localStorage.setItem('currentWordBookId', state.currentWordBookId);
+            updateStats();
+            getNextWord();
+        }
+        
+        // 切換單字簿編輯模式
+        function toggleWordbookEdit() {
+            elements.wordbookEditPanel.classList.toggle('active');
+            if (elements.wordbookEditPanel.classList.contains('active')) {
+                const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+                elements.wordbookNameInput.value = currentBook.name;
+                updateWordList();
+            }
+        }
+        
+        // 保存單字簿名稱
+        function saveWordbookName() {
+            const newName = elements.wordbookNameInput.value.trim();
+            if (!newName) {
+                alert('請輸入單字簿名稱！');
+                return;
+            }
+            if (state.wordBooks.some(book => book.name === newName && book.id !== state.currentWordBookId)) {
+                alert('單字簿名稱已存在！');
+                return;
+            }
+            
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            currentBook.name = newName;
+            saveWordBooks();
+            updateWordbookSelect();
+        }
+        
+        // 更新單字列表
+        function updateWordList() {
+            elements.wordbookWordListBody.innerHTML = '';
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            
+            currentBook.words.forEach(word => {
                 const row = document.createElement('tr');
                 
                 const englishCell = document.createElement('td');
@@ -640,7 +784,7 @@
                 row.appendChild(chineseCell);
                 row.appendChild(actionCell);
                 
-                elements.wordListBody.appendChild(row);
+                elements.wordbookWordListBody.appendChild(row);
             });
         }
         
@@ -650,58 +794,77 @@
             const chinese = elements.newChinese.value.trim();
             
             if (english && chinese) {
+                const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
                 const newWord = {
-                    id: Date.now(), // 使用時間戳作為唯一ID
+                    id: Date.now(),
                     english,
                     chinese,
                     learned: false
                 };
                 
-                state.vocabulary.push(newWord);
-                saveVocabulary();
+                currentBook.words.push(newWord);
+                saveWordBooks();
                 updateWordList();
                 updateStats();
                 
-                // 清空輸入
                 elements.newEnglish.value = '';
                 elements.newChinese.value = '';
                 elements.newEnglish.focus();
+                updateWordbookSelect();
             }
         }
         
         // 移除單詞
         function removeWord(id) {
-            state.vocabulary = state.vocabulary.filter(word => word.id !== id);
-            saveVocabulary();
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            currentBook.words = currentBook.words.filter(word => word.id !== id);
+            saveWordBooks();
             updateWordList();
             updateStats();
+            updateWordbookSelect();
             
-            // 如果移除了當前測驗的單詞，換下一個
             if (state.currentWord && state.currentWord.id === id) {
                 getNextWord();
             }
         }
         
-        // 保存詞彙表到本地存儲
-        function saveVocabulary() {
-            localStorage.setItem('vocabulary', JSON.stringify(state.vocabulary));
+        // 刪除單字簿
+        function deleteWordbook() {
+            if (state.wordBooks.length <= 1) {
+                alert('無法刪除最後一個單字簿！');
+                return;
+            }
+            
+            state.wordBooks = state.wordBooks.filter(book => book.id !== state.currentWordBookId);
+            state.currentWordBookId = state.wordBooks[0].id;
+            saveWordBooks();
+            updateWordbookSelect();
+            elements.wordbookEditPanel.classList.remove('active');
+            updateStats();
+            getNextWord();
+        }
+        
+        // 保存單字簿到本地存儲
+        function saveWordBooks() {
+            localStorage.setItem('wordBooks', JSON.stringify(state.wordBooks));
+            localStorage.setItem('currentWordBookId', state.currentWordBookId);
         }
         
         // 保存統計數據到本地存儲
         function saveStats() {
             localStorage.setItem('stats', JSON.stringify(state.stats));
-            // 保存今日統計數據
             localStorage.setItem('todayStats', JSON.stringify({
                 ...state.todayStats,
-                words: [...state.todayStats.words] // 將 Set 轉為數組以便存儲
+                words: [...state.todayStats.words]
             }));
         }
         
         // 更新統計信息
         function updateStats() {
-            const learned = state.vocabulary.filter(word => word.learned).length;
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            const learned = currentBook.words.filter(word => word.learned).length;
             elements.learnedCount.textContent = learned;
-            elements.totalCount.textContent = state.vocabulary.length;
+            elements.totalCount.textContent = currentBook.words.length;
             elements.correctCount.textContent = state.stats.correct;
             elements.incorrectCount.textContent = state.stats.incorrect;
         }
@@ -722,40 +885,39 @@
         // 更新當前模式顯示
         function updateCurrentMode() {
             elements.currentMode.textContent = state.quizMode === 'en_to_zh' ? '英文 → 中文' : '中文 → 英文';
+            updateHintVisibility();
         }
         
         // 獲取下一個單詞
         function getNextWord() {
-            // 重置狀態
             state.showResult = false;
             elements.quizResult.style.display = 'none';
             elements.quizInputContainer.style.display = 'block';
             elements.answerInput.value = '';
+            elements.hintContainer.style.display = 'none';
+            elements.hintText.textContent = '';
             
-            // 檢查詞彙表是否為空
-            if (state.vocabulary.length === 0) {
-                elements.quizQuestion.textContent = '請先添加單詞';
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            if (currentBook.words.length === 0) {
+                elements.quizQuestion.textContent = '請先添加單詞到當前單字簿';
                 elements.quizInputContainer.style.display = 'none';
+                elements.showHintBtn.style.display = 'none';
                 return;
             }
             
-            // 優先選擇未學習的單詞
-            const unlearned = state.vocabulary.filter(word => !word.learned);
+            const unlearned = currentBook.words.filter(word => !word.learned);
             if (unlearned.length > 0) {
                 const randomIndex = Math.floor(Math.random() * unlearned.length);
                 state.currentWord = unlearned[randomIndex];
             } else {
-                // 如果所有單詞都已學習，隨機選擇一個並重置學習狀態
-                const randomIndex = Math.floor(Math.random() * state.vocabulary.length);
-                state.currentWord = state.vocabulary[randomIndex];
+                const randomIndex = Math.floor(Math.random() * currentBook.words.length);
+                state.currentWord = currentBook.words[randomIndex];
                 
-                // 重置所有單詞的學習狀態
-                state.vocabulary = state.vocabulary.map(word => ({ ...word, learned: false }));
-                saveVocabulary();
+                currentBook.words = currentBook.words.map(word => ({ ...word, learned: false }));
+                saveWordBooks();
                 updateStats();
             }
             
-            // 根據測驗模式顯示問題
             if (state.quizMode === 'en_to_zh') {
                 elements.quizQuestion.textContent = state.currentWord.english;
                 elements.answerInput.placeholder = '請輸入中文翻譯';
@@ -764,7 +926,7 @@
                 elements.answerInput.placeholder = '請輸入英文單詞';
             }
             
-            // 讓輸入框獲得焦點
+            updateHintVisibility();
             setTimeout(() => elements.answerInput.focus(), 100);
         }
         
@@ -782,27 +944,25 @@
             state.isCorrect = userInput === correctAnswer;
             state.showResult = true;
             
-            // 更新統計
             if (state.isCorrect) {
                 state.stats.correct++;
                 state.todayStats.correct++;
                 
-                // 將單詞標記為已學習
-                state.vocabulary = state.vocabulary.map(word => 
+                const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+                currentBook.words = currentBook.words.map(word => 
                     word.id === state.currentWord.id ? { ...word, learned: true } : word
                 );
-                saveVocabulary();
+                saveWordBooks();
             } else {
                 state.stats.incorrect++;
                 state.todayStats.incorrect++;
             }
             state.stats.total++;
             state.todayStats.total++;
-            state.todayStats.words.add(state.currentWord.id); // 記錄練習的單字
+            state.todayStats.words.add(state.currentWord.id);
             saveStats();
             updateStats();
             
-            // 顯示結果
             elements.quizInputContainer.style.display = 'none';
             elements.quizResult.style.display = 'block';
             
@@ -819,7 +979,6 @@
         function toggleQuizMode() {
             state.quizMode = state.quizMode === 'en_to_zh' ? 'zh_to_en' : 'en_to_zh';
             localStorage.setItem('quizMode', state.quizMode);
-            
             updateCurrentMode();
             updateTabButtons();
             getNextWord();
@@ -827,7 +986,6 @@
         
         // 顯示統計模態視窗
         function showStatsModal() {
-            // 更新統計容器內容
             elements.todayWords.textContent = state.todayStats.words.size;
             elements.todayAttempts.textContent = state.todayStats.total;
             const winRate = state.todayStats.total > 0 
@@ -835,7 +993,6 @@
                 : 0;
             elements.todayWinRate.textContent = `${winRate}%`;
             
-            // 顯示模態視窗
             elements.statsModal.style.display = 'flex';
         }
         
@@ -846,9 +1003,7 @@
         
         // 下載統計圖片
         function downloadStatsImage() {
-            // 使用 html2canvas 渲染圖片
             html2canvas(elements.statsImageContainer, { backgroundColor: null }).then(canvas => {
-                // 創建下載鏈接
                 const link = document.createElement('a');
                 link.download = `vocabulary-stats-${new Date().toISOString().split('T')[0]}.png`;
                 link.href = canvas.toDataURL('image/png');
@@ -871,9 +1026,38 @@
         // 更新主題圖標
         function updateThemeIcon(theme) {
             elements.themeIcon.setAttribute('d', theme === 'light' 
-                ? 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z' // 月亮圖標
-                : 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z' // 太陽圖標
+                ? 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'
+                : 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'
             );
+        }
+        
+        // 更新提示按鈕可見性
+        function updateHintVisibility() {
+            const currentBook = state.wordBooks.find(book => book.id === state.currentWordBookId);
+            if (state.quizMode === 'zh_to_en' && currentBook.words.length > 0) {
+                elements.showHintBtn.style.display = 'inline-block';
+            } else {
+                elements.showHintBtn.style.display = 'none';
+                elements.hintContainer.style.display = 'none';
+                elements.hintText.textContent = '';
+            }
+        }
+        
+        // 顯示提示
+        function showHint() {
+            if (!state.currentWord) return;
+            
+            const word = state.currentWord.english;
+            let hint = '';
+            
+            if (word.length === 1) {
+                hint = word;
+            } else {
+                hint = `${word[0]}___${word[word.length - 1]}`;
+            }
+            
+            elements.hintText.textContent = hint;
+            elements.hintContainer.style.display = 'block';
         }
         
         // 頁面加載時初始化應用
