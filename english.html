@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文單字學習</title>
+    <style>
+        /* 基本樣式 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #2563eb;
+        }
+        
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        button.secondary {
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+        
+        button.secondary:hover {
+            background-color: #d1d5db;
+        }
+        
+        button.success {
+            background-color: #10b981;
+        }
+        
+        button.success:hover {
+            background-color: #059669;
+        }
+        
+        button.danger {
+            background-color: #ef4444;
+        }
+        
+        button.danger:hover {
+            background-color: #dc2626;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .stats .progress {
+            flex: 1;
+        }
+        
+        .stats .score {
+            text-align: right;
+        }
+        
+        .correct {
+            color: #10b981;
+        }
+        
+        .incorrect {
+            color: #ef4444;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        
+        .quiz-card {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .quiz-mode {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+        
+        .quiz-mode button {
+            background: none;
+            color: #2563eb;
+            padding: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .quiz-mode button:hover {
+            text-decoration: underline;
+            background: none;
+        }
+        
+        .word {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .result {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .result-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        /* 設置頁面樣式 */
+        .settings {
+            display: none;
+        }
+        
+        .settings.active {
+            display: block;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .tab-button {
+            margin-right: 10px;
+        }
+        
+        .word-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        th {
+            background-color: #f9fafb;
+            font-weight: bold;
+        }
+        
+        .word-form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .word-form input {
+            flex: 1;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>英文單字學習</h1>
+            <button id="settings-button" class="secondary">設定</button>
+        </header>
+        
+        <!-- 設置頁面 -->
+        <div id="settings-panel" class="card settings">
+            <h2>單詞設置</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-button secondary" data-mode="zh_to_en">中文 → 英文</button>
+                <button class="tab-button" data-mode="en_to_zh">英文 → 中文</button>
+            </div>
+            
+            <h3>單詞管理</h3>
+            <div class="word-list">
+                <table id="word-table">
+                    <thead>
+                        <tr>
+                            <th>英文</th>
+                            <th>中文</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="word-list-body">
+                        <!-- JavaScript 將在這裡插入單詞 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <h3>添加單詞</h3>
+            <div class="word-form">
+                <input type="text" id="new-english" placeholder="英文">
+                <input type="text" id="new-chinese" placeholder="中文">
+                <button id="add-word-btn" class="success">添加</button>
+            </div>
+        </div>
+        
+        <!-- 學習統計 -->
+        <div class="card">
+            <div class="stats">
+                <div class="progress">
+                    <h2>學習進度</h2>
+                    <p>已學習: <span id="learned-count">0</span> / <span id="total-count">0</span> 單詞</p>
+                </div>
+                <div class="score">
+                    <p class="correct">正確: <span id="correct-count">0</span></p>
+                    <p class="incorrect">錯誤: <span id="incorrect-count">0</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 測驗卡片 -->
+        <div class="card quiz-card">
+            <div class="quiz-mode">
+                <span>當前模式: <span id="current-mode">英文 → 中文</span></span>
+                <button id="toggle-mode-btn">
+                    <span class="material-icons">sync</span>
+                    切換模式
+                </button>
+            </div>
+            
+            <div id="quiz-question" class="word"></div>
+            
+            <div id="quiz-input-container">
+                <input type="text" id="answer-input" placeholder="請輸入翻譯" autofocus>
+                <button id="check-answer-btn">檢查答案</button>
+            </div>
+            
+            <div id="quiz-result" style="display: none;">
+                <div id="result-icon" class="result-icon"></div>
+                <p class="result" id="result-text"></p>
+                <p>正確答案: <strong id="correct-answer"></strong></p>
+                <button id="next-word-btn">下一個</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始單詞表
+        const initialVocabulary = [
+            { id: 1, english: "apple", chinese: "蘋果", learned: false },
+            { id: 2, english: "book", chinese: "書", learned: false },
+            { id: 3, english: "computer", chinese: "電腦", learned: false },
+            { id: 4, english: "language", chinese: "語言", learned: false },
+            { id: 5, english: "student", chinese: "學生", learned: false },
+            { id: 6, english: "teacher", chinese: "老師", learned: false },
+            { id: 7, english: "friend", chinese: "朋友", learned: false },
+            { id: 8, english: "water", chinese: "水", learned: false },
+            { id: 9, english: "coffee", chinese: "咖啡", learned: false },
+            { id: 10, english: "time", chinese: "時間", learned: false }
+        ];
+        
+        // 應用狀態
+        let state = {
+            vocabulary: [],
+            currentWord: null,
+            quizMode: 'en_to_zh', // 'en_to_zh' 或 'zh_to_en'
+            showResult: false,
+            isCorrect: false,
+            stats: {
+                correct: 0,
+                incorrect: 0,
+                total: 0
+            }
+        };
+        
+        // DOM 元素
+        const elements = {
+            settingsButton: document.getElementById('settings-button'),
+            settingsPanel: document.getElementById('settings-panel'),
+            wordListBody: document.getElementById('word-list-body'),
+            newEnglish: document.getElementById('new-english'),
+            newChinese: document.getElementById('new-chinese'),
+            addWordBtn: document.getElementById('add-word-btn'),
+            learnedCount: document.getElementById('learned-count'),
+            totalCount: document.getElementById('total-count'),
+            correctCount: document.getElementById('correct-count'),
+            incorrectCount: document.getElementById('incorrect-count'),
+            currentMode: document.getElementById('current-mode'),
+            toggleModeBtn: document.getElementById('toggle-mode-btn'),
+            quizQuestion: document.getElementById('quiz-question'),
+            answerInput: document.getElementById('answer-input'),
+            checkAnswerBtn: document.getElementById('check-answer-btn'),
+            quizResult: document.getElementById('quiz-result'),
+            resultIcon: document.getElementById('result-icon'),
+            resultText: document.getElementById('result-text'),
+            correctAnswer: document.getElementById('correct-answer'),
+            nextWordBtn: document.getElementById('next-word-btn'),
+            quizInputContainer: document.getElementById('quiz-input-container'),
+            tabButtons: document.querySelectorAll('.tab-button')
+        };
+        
+        // 初始化應用
+        function initApp() {
+            // 從本地存儲中加載數據或使用初始數據
+            const savedVocabulary = localStorage.getItem('vocabulary');
+            state.vocabulary = savedVocabulary ? JSON.parse(savedVocabulary) : [...initialVocabulary];
+            
+            // 從本地存儲中加載統計數據
+            const savedStats = localStorage.getItem('stats');
+            if (savedStats) {
+                state.stats = JSON.parse(savedStats);
+            }
+            
+            // 加載測驗模式
+            const savedMode = localStorage.getItem('quizMode');
+            if (savedMode) {
+                state.quizMode = savedMode;
+            }
+            
+            // 設置事件監聽器
+            setupEventListeners();
+            
+            // 更新界面
+            updateWordList();
+            updateStats();
+            updateTabButtons();
+            updateCurrentMode();
+            getNextWord();
+        }
+        
+        // 設置事件監聽器
+        function setupEventListeners() {
+            // 設置按鈕
+            elements.settingsButton.addEventListener('click', toggleSettings);
+            
+            // 添加單詞
+            elements.addWordBtn.addEventListener('click', addNewWord);
+            
+            // 測驗操作
+            elements.toggleModeBtn.addEventListener('click', toggleQuizMode);
+            elements.checkAnswerBtn.addEventListener('click', checkAnswer);
+            elements.nextWordBtn.addEventListener('click', getNextWord);
+            elements.answerInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    if (state.showResult) {
+                        getNextWord();
+                    } else {
+                        checkAnswer();
+                    }
+                }
+            });
+            
+            // 模式切換標籤
+            elements.tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    state.quizMode = this.dataset.mode;
+                    localStorage.setItem('quizMode', state.quizMode);
+                    updateTabButtons();
+                    updateCurrentMode();
+                    getNextWord();
+                });
+            });
+        }
+        
+        // 切換設置面板
+        function toggleSettings() {
+            elements.settingsPanel.classList.toggle('active');
+        }
+        
+        // 更新單詞列表
+        function updateWordList() {
+            elements.wordListBody.innerHTML = '';
+            
+            state.vocabulary.forEach(word => {
+                const row = document.createElement('tr');
+                
+                const englishCell = document.createElement('td');
+                englishCell.textContent = word.english;
+                
+                const chineseCell = document.createElement('td');
+                chineseCell.textContent = word.chinese;
+                
+                const actionCell = document.createElement('td');
+                const removeButton = document.createElement('button');
+                removeButton.textContent = '移除';
+                removeButton.className = 'danger';
+                removeButton.addEventListener('click', () => removeWord(word.id));
+                actionCell.appendChild(removeButton);
+                
+                row.appendChild(englishCell);
+                row.appendChild(chineseCell);
+                row.appendChild(actionCell);
+                
+                elements.wordListBody.appendChild(row);
+            });
+        }
+        
+        // 添加新單詞
+        function addNewWord() {
+            const english = elements.newEnglish.value.trim();
+            const chinese = elements.newChinese.value.trim();
+            
+            if (english && chinese) {
+                const newWord = {
+                    id: Date.now(), // 使用時間戳作為唯一ID
+                    english,
+                    chinese,
+                    learned: false
+                };
+                
+                state.vocabulary.push(newWord);
+                saveVocabulary();
+                updateWordList();
+                updateStats();
+                
+                // 清空輸入
+                elements.newEnglish.value = '';
+                elements.newChinese.value = '';
+                elements.newEnglish.focus();
+            }
+        }
+        
+        // 移除單詞
+        function removeWord(id) {
+            state.vocabulary = state.vocabulary.filter(word => word.id !== id);
+            saveVocabulary();
+            updateWordList();
+            updateStats();
+            
+            // 如果移除了當前測驗的單詞，換下一個
+            if (state.currentWord && state.currentWord.id === id) {
+                getNextWord();
+            }
+        }
+        
+        // 保存詞彙表到本地存儲
+        function saveVocabulary() {
+            localStorage.setItem('vocabulary', JSON.stringify(state.vocabulary));
+        }
+        
+        // 保存統計數據到本地存儲
+        function saveStats() {
+            localStorage.setItem('stats', JSON.stringify(state.stats));
+        }
+        
+        // 更新統計信息
+        function updateStats() {
+            const learned = state.vocabulary.filter(word => word.learned).length;
+            elements.learnedCount.textContent = learned;
+            elements.totalCount.textContent = state.vocabulary.length;
+            elements.correctCount.textContent = state.stats.correct;
+            elements.incorrectCount.textContent = state.stats.incorrect;
+        }
+        
+        // 更新模式標籤按鈕
+        function updateTabButtons() {
+            elements.tabButtons.forEach(button => {
+                if (button.dataset.mode === state.quizMode) {
+                    button.classList.remove('secondary');
+                    button.classList.add('primary');
+                } else {
+                    button.classList.add('secondary');
+                    button.classList.remove('primary');
+                }
+            });
+        }
+        
+        // 更新當前模式顯示
+        function updateCurrentMode() {
+            elements.currentMode.textContent = state.quizMode === 'en_to_zh' ? '英文 → 中文' : '中文 → 英文';
+        }
+        
+        // 獲取下一個單詞
+        function getNextWord() {
+            // 重置狀態
+            state.showResult = false;
+            elements.quizResult.style.display = 'none';
+            elements.quizInputContainer.style.display = 'block';
+            elements.answerInput.value = '';
+            
+            // 檢查詞彙表是否為空
+            if (state.vocabulary.length === 0) {
+                elements.quizQuestion.textContent = '請先添加單詞';
+                elements.quizInputContainer.style.display = 'none';
+                return;
+            }
+            
+            // 優先選擇未學習的單詞
+            const unlearned = state.vocabulary.filter(word => !word.learned);
+            if (unlearned.length > 0) {
+                const randomIndex = Math.floor(Math.random() * unlearned.length);
+                state.currentWord = unlearned[randomIndex];
+            } else {
+                // 如果所有單詞都已學習，隨機選擇一個並重置學習狀態
+                const randomIndex = Math.floor(Math.random() * state.vocabulary.length);
+                state.currentWord = state.vocabulary[randomIndex];
+                
+                // 重置所有單詞的學習狀態
+                state.vocabulary = state.vocabulary.map(word => ({ ...word, learned: false }));
+                saveVocabulary();
+                updateStats();
+            }
+            
+            // 根據測驗模式顯示問題
+            if (state.quizMode === 'en_to_zh') {
+                elements.quizQuestion.textContent = state.currentWord.english;
+                elements.answerInput.placeholder = '請輸入中文翻譯';
+            } else {
+                elements.quizQuestion.textContent = state.currentWord.chinese;
+                elements.answerInput.placeholder = '請輸入英文單詞';
+            }
+            
+            // 讓輸入框獲得焦點
+            setTimeout(() => elements.answerInput.focus(), 100);
+        }
+        
+        // 檢查答案
+        function checkAnswer() {
+            const userInput = elements.answerInput.value.trim().toLowerCase();
+            let correctAnswer;
+            
+            if (state.quizMode === 'en_to_zh') {
+                correctAnswer = state.currentWord.chinese.toLowerCase();
+            } else {
+                correctAnswer = state.currentWord.english.toLowerCase();
+            }
+            
+            state.isCorrect = userInput === correctAnswer;
+            state.showResult = true;
+            
+            // 更新統計
+            if (state.isCorrect) {
+                state.stats.correct++;
+                
+                // 將單詞標記為已學習
+                state.vocabulary = state.vocabulary.map(word => 
+                    word.id === state.currentWord.id ? { ...word, learned: true } : word
+                );
+                saveVocabulary();
+            } else {
+                state.stats.incorrect++;
+            }
+            state.stats.total++;
+            saveStats();
+            updateStats();
+            
+            // 顯示結果
+            elements.quizInputContainer.style.display = 'none';
+            elements.quizResult.style.display = 'block';
+            
+            elements.resultIcon.textContent = state.isCorrect ? '✓' : '✗';
+            elements.resultIcon.className = 'result-icon ' + (state.isCorrect ? 'correct' : 'incorrect');
+            
+            elements.resultText.textContent = state.isCorrect ? '正確!' : '錯誤!';
+            elements.resultText.className = 'result ' + (state.isCorrect ? 'correct' : 'incorrect');
+            
+            elements.correctAnswer.textContent = state.quizMode === 'en_to_zh' ? state.currentWord.chinese : state.currentWord.english;
+        }
+        
+        // 切換測驗模式
+        function toggleQuizMode() {
+            state.quizMode = state.quizMode === 'en_to_zh' ? 'zh_to_en' : 'en_to_zh';
+            localStorage.setItem('quizMode', state.quizMode);
+            
+            updateCurrentMode();
+            updateTabButtons();
+            getNextWord();
+        }
+        
+        // 頁面加載時初始化應用
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
