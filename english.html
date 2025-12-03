@@ -340,20 +340,6 @@
             margin-left: 10px;
         }
 
-        /* 新增：電腦用戶的快捷鍵提示樣式 - 只在寬螢幕顯示 */
-        .keyboard-shortcut::after {
-            content: ' (R)';
-            color: var(--quiz-mode-color);
-            font-size: 14px;
-            margin-left: 5px;
-        }
-        @media (max-width: 600px) {
-            .keyboard-shortcut::after {
-                content: '';
-            }
-        }
-
-
         /* 輸入區域布局 */
         .quiz-input-area {
             display: flex;
@@ -498,7 +484,7 @@
             <div id="quiz-input-container">
                 <div class="quiz-input-area">
                     <input type="text" id="answer-input" placeholder="請輸入翻譯" autofocus>
-                    <button id="show-hint-btn" class="secondary" style="display: none;">顯示提示<span id="hint-shortcut" class="keyboard-shortcut"></span></button>
+                    <button id="show-hint-btn" class="secondary" style="display: none;">顯示提示</button>
                     <button id="check-answer-btn">檢查答案</button>
                 </div>
                 <div id="hint-container">
@@ -510,7 +496,7 @@
                 <div id="result-icon" class="result-icon"></div>
                 <p class="result" id="result-text"></p>
                 <p>正確答案: <strong id="correct-answer"></strong><button id="speak-btn" title="朗讀單字">🔊</button></p>
-                <button id="next-word-btn">下一個<span id="next-shortcut" class="keyboard-shortcut"></span></button>
+                <button id="next-word-btn">下一個</button>
             </div>
         </div>
 
@@ -784,29 +770,6 @@
             elements.speakBtn.addEventListener('click', speakCurrentWord);
             elements.volumeSlider.addEventListener('input', handleVolumeChange);
             elements.masteryModeToggle.addEventListener('change', handleMasteryModeToggle); // 新增
-
-            // 新增：鍵盤事件監聽器
-            document.addEventListener('keydown', handleKeyboardShortcuts);
-        }
-
-        // 新增：處理鍵盤快捷鍵
-        function handleKeyboardShortcuts(event) {
-            // 檢查是否在輸入框或設定模態框中
-            if (document.activeElement.tagName === 'INPUT' || elements.settingsModal.style.display === 'flex') {
-                return; // 在輸入時或模態框開啟時不啟用快捷鍵
-            }
-            
-            if (event.key.toLowerCase() === 'r') {
-                event.preventDefault(); // 防止R鍵產生其他瀏覽器行為
-
-                if (state.showResult) {
-                    // 結果頁面：按下R等於「下一個」
-                    elements.nextWordBtn.click();
-                } else if (state.quizMode === 'zh_to_en' && elements.showHintBtn.style.display !== 'none') {
-                    // 回答頁面且是「中文 -> 英文」模式：按下R等於「顯示提示」
-                    elements.showHintBtn.click();
-                }
-            }
         }
         
         function showSettingsModal() { elements.settingsModal.style.display = 'flex'; }
@@ -1184,7 +1147,7 @@
         }
         function updateHintVisibility() {
             const hasWords = getQuizWords().length > 0;
-            elements.showHintBtn.style.display = state.quizMode === 'zh_to_en' && hasWords && !state.showResult ? 'inline-block' : 'none';
+            elements.showHintBtn.style.display = state.quizMode === 'zh_to_en' && hasWords ? 'inline-block' : 'none';
         }
         function showHint() {
             if (!state.currentWord) return;
@@ -1223,3 +1186,4 @@
     </script>
 </body>
 </html>
+我希望你增加對於電腦用戶更加友善的體驗環境，按下r可以檢視提示，按下r也可以按下"下一個"的按鈕(雖然按鍵一樣，但是一個是用戶回答的頁面和結果的畫面)，還有不要影響手機用戶的體驗(像是不要有甚麼按下r看提示之類的提示詞)
